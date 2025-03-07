@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>FAPS HIGH TECH VAULT</title>
+    <title>HI TECH VAULT</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -11,18 +11,12 @@
             --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>  </script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  </script>
-
-
         body {
             font-family: 'Roboto', sans-serif;
             background-color: var(--light-gray);
             color: #343a40;
             margin: 0;
-            display: flex;
-            flex-direction: column;
+            display: flex; /* Use flexbox for layout */
             min-height: 100vh;
         }
 
@@ -34,12 +28,40 @@
             margin-bottom: 20px;
         }
 
+        #sidebar {
+            width: 200px; /* Adjust sidebar width as needed */
+            background-color: #333;
+            color: white;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        #sidebar a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            transition: background-color 0.3s;
+            text-align: left;
+        }
+
+        #sidebar a:hover {
+            background-color: #555;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
         #modules {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
-            padding: 20px;
-            flex-grow: 1;
+            flex-grow: 1; /* Allow modules to expand */
         }
 
         .module {
@@ -93,7 +115,7 @@
                 grid-template-columns: 1fr;
             }
         }
-
+        
         #login-modal {
             position: fixed;
             top: 0;
@@ -145,10 +167,13 @@
 
         #content {
             display: none;
+            display: flex; /* Make content a flex container */
         }
     </style>
 </head>
 <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <div id="login-modal">
         <div id="login-form">
@@ -164,34 +189,69 @@
                 <button type="submit">Login</button>
             </form>
         </div>
+
+        
     </div>
 
-    <div id="content">
-        <h1>FAPS HIGH TECH VAULT MONITORING SYSTEM</h1>
-        <div id="modules">
-            <div class="module">
-                <h2>Activity Log</h2>
-                <div id="activity-log" class="loading">Loading...</div>
-            </div>
+        <div id="main-content">
+            <h1>HI TECH VAULT MONITORING SYSTEM</h1>
+            <video id="cameraFeed" width="100%" controls autoplay muted style="display: none;"></video>
+            <div id="modules">
+                <div class="module" id="access_logs_container" style="display: none;">
+                    <h2>Access Logs</h2>
+                    <div id="access_logs" class="loading">Loading...</div>
+                </div>
 
-            <div class="module">
-                <h2>Access Logs</h2>
-                <div id="access-logs" class="loading">Loading...</div>
-            </div>
+                <div class="module" id="alerts_container" style="display: none;">
+                    <h2>Alerts & Notifications</h2>
+                    <div id="alerts" class="loading">Loading...</div>
+                </div>
 
-            <div class="module">
-                <h2>Access Attempts</h2>
-                <div id="access-attempts" class="loading">Loading...</div>
-            </div>
+                <div class="module" id="sensors_container" style="display: none;">
+                    <h2>Sensor Data</h2>
+                    <div id="sensors" class="loading">Loading...</div>
+                </div>
 
-            <div class="module">
-                <h2>Alerts & Notifications</h2>
-                <div id="alerts" class="loading">Loading...</div>
+                <div class="module" id="battery_container" style="display: none;">
+                    <h2>Battery Status</h2>
+                    <div id="Battery" class="loading">Loading...</div>
+                </div>
             </div>
         </div>
+
+        <div id="content" style="display: none;">
+            <div id="sidebar">
+                <a href="#" data-module="access_logs">Access Logs</a>
+                <a href="#" data-module="alerts">Alerts & Notifications</a>
+                <a href="#" data-module="sensors">Sensor Data</a>
+                <a href="#" data-module="battery">Battery Status</a>
+            </div>
     </div>
 
     <script>
+        const socket = io();
+        let isLoggedIn = false; // Track login status
+
+        // Store user credentials
+const users = {
+    'toheeb': 'oguns',
+    'ajiboye': 'ajiboye',
+    'david': 'chinedu'
+};
+
+        socket.on('connect', () => {
+            console.log('Connected');
+        });
+
+        socket.on('data_update', (data) => {
+            console.log('Data update:', data);
+            if (isLoggedIn) { // Only update if logged in
+                updateModules(data);
+            }
+        });
+
+
+        // Login Logic
         const loginModal = document.getElementById('login-modal');
         const content = document.getElementById('content');
         const loginForm = document.getElementById('loginForm');
@@ -203,75 +263,87 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            if (username === 'admin' && password === 'password') { // Replace with real authentication
+            if (users[username] && users[username] === password) { // Replace with real authentication
+
                 loginModal.style.display = 'none';
                 content.style.display = 'block';
-
-                loadData();
-
+                isLoggedIn = true; // Set login status to true
+                updateModules({}); // Request initial data after login
             } else {
                 errorMessage.textContent = 'Invalid username or password.';
             }
+
+            document.getElementById('cameraFeed').style.display = 'block';
+document.getElementById('cameraFeed').src = 'YOUR_CAMERA_STREAM_URL'; // Replace with your camera stream URL
         });
 
 
-        function loadData() {
-    // ... (Existing code for other modules) ...
+        // Menu and Module Handling
+        const menuLinks = document.querySelectorAll('#menu a');
+        const moduleContainers = {
+            "access_logs": document.getElementById('access_logs_container'),
+            "alerts": document.getElementById('alerts_container'),
+            "sensors": document.getElementById('sensor_container'),
+            "battery": document.getElementById('battery_container'),
+        };
 
-    function displayData(data, elementId, isTable = true) {
-        // ... (Existing displayData function) ...
-    }
+        menuLinks.forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const moduleId = event.target.dataset.module;
 
-    // Fetch alerts data (replace with your actual API endpoint)
-    fetch('/api/alerts')
-        .then(response => response.json())
-        .then(alertsData => {
-            displayData(alertsData, "alerts"); // Display alerts in the "alerts" div
-        })
-        .catch(error => {
-            console.error("Error fetching alerts:", error);
-            document.getElementById("alerts").textContent = "Error loading alerts.";
-        });
-
-    // ... (Existing code to display other data) ...
-}
-
-        function loadData() {
-            const activityLogData = [
-                { timestamp: "2024-10-27 10:00", user: "John", action: "Accessed data" },
-                { timestamp: "2024-10-27 10:05", user: "Jane", action: "Modified settings" },
-                // ... more data
-            ];
-
-            const accessLogsData = [
-                { timestamp: "2024-10-27 09:00", user: "John", ip: "192.168.1.100" },
-                // ... more data
-            ]
-
-            const accessAttemptsData = [
-                { timestamp: "2024-10-27 08:00", user: "guest", ip: "10.0.0.1", success: false },
-                // ... more data
-            ]
-
-
-            function displayData(data, elementId) {
-                const container = document.getElementById(elementId);
-                container.classList.remove("loading");
-                container.innerHTML = "";
-
-                if (data.length === 0) {
-                    container.innerHTML = "No data available.";
-                    return;
+                // Hide all modules
+                for (const container in moduleContainers) {
+                    moduleContainers[container].style.display = 'none';
                 }
 
-                const table = document.createElement("table");
-                const headerRow = table.insertRow();
+                // Show the selected module
+                moduleContainers[moduleId].style.display = 'block';
 
+                // If data hasn't been loaded, request it:
+                if (document.getElementById(moduleId).innerHTML.includes("Loading...")) {
+                  socket.emit('request_data', moduleId); // Request data for this specific module
+                }
+
+            });
+        });
+
+        function updateModules(data) {
+            for (const moduleId in data) {
+                const moduleData = data[moduleId];
+                displayData(moduleData, moduleId);
+            }
+        }
+
+        function displayData(data, elementId) {
+            const container = document.getElementById(elementId);
+            container.classList.remove("loading");
+            container.innerHTML = "";
+
+            if (data && data.length === 0) {
+                container.innerHTML = "No data available.";
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = "No data available.";
+                return;
+            }
+
+            const table = document.createElement("table");
+            const headerRow = table.insertRow();
+
+            if (data && data.length > 0) {
                 for (const key in data[0]) {
                     const headerCell = headerRow.insertCell();
                     headerCell.textContent = key;
                 }
+            } else {
+                const headerCell = headerRow.insertCell();
+                headerCell.textContent = "No Data";
+            }
 
+            if (data) {
                 data.forEach(item => {
                     const row = table.insertRow();
                     for (const key in item) {
@@ -279,16 +351,12 @@
                         cell.textContent = item[key];
                     }
                 });
-
-                container.appendChild(table);
             }
 
-            displayData(activityLogData, "activity-log");
-            displayData(accessLogsData, "access-logs");
-            displayData(accessAttemptsData, "access-attempts");
+            container.appendChild(table);
         }
 
     </script>
-
+    
 </body>
 </html>
