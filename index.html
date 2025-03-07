@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FAPS HIGH TECH VAULT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>  </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  </script>
+
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--light-gray);
+            color: #343a40;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        h1 {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #modules {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .module {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .module:hover {
+            transform: scale(1.02);
+        }
+
+        .module h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #e9ecef;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            #modules {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        #login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #login-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--box-shadow);
+        }
+
+        #login-form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #login-form input[type="text"],
+        #login-form input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        #login-form button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+
+        #content {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-modal">
+        <div id="login-form">
+            <h2>Admin Login</h2>
+            <div id="error-message"></div>
+            <form id="loginForm">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="content">
+        <h1>FAPS HIGH TECH VAULT MONITORING SYSTEM</h1>
+        <div id="modules">
+            <div class="module">
+                <h2>Activity Log</h2>
+                <div id="activity-log" class="loading">Loading...</div>
+            </div>
+
+            <div class="module">
+                <h2>Access Logs</h2>
+                <div id="access-logs" class="loading">Loading...</div>
+            </div>
+
+            <div class="module">
+                <h2>Access Attempts</h2>
+                <div id="access-attempts" class="loading">Loading...</div>
+            </div>
+
+            <div class="module">
+                <h2>Alerts & Notifications</h2>
+                <div id="alerts" class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginModal = document.getElementById('login-modal');
+        const content = document.getElementById('content');
+        const loginForm = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('error-message');
+
+        loginForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === 'password') { // Replace with real authentication
+                loginModal.style.display = 'none';
+                content.style.display = 'block';
+
+                loadData();
+
+            } else {
+                errorMessage.textContent = 'Invalid username or password.';
+            }
+        });
+
+
+        function loadData() {
+    // ... (Existing code for other modules) ...
+
+    function displayData(data, elementId, isTable = true) {
+        // ... (Existing displayData function) ...
+    }
+
+    // Fetch alerts data (replace with your actual API endpoint)
+    fetch('/api/alerts')
+        .then(response => response.json())
+        .then(alertsData => {
+            displayData(alertsData, "alerts"); // Display alerts in the "alerts" div
+        })
+        .catch(error => {
+            console.error("Error fetching alerts:", error);
+            document.getElementById("alerts").textContent = "Error loading alerts.";
+        });
+
+    // ... (Existing code to display other data) ...
+}
+
+        function loadData() {
+            const activityLogData = [
+                { timestamp: "2024-10-27 10:00", user: "John", action: "Accessed data" },
+                { timestamp: "2024-10-27 10:05", user: "Jane", action: "Modified settings" },
+                // ... more data
+            ];
+
+            const accessLogsData = [
+                { timestamp: "2024-10-27 09:00", user: "John", ip: "192.168.1.100" },
+                // ... more data
+            ]
+
+            const accessAttemptsData = [
+                { timestamp: "2024-10-27 08:00", user: "guest", ip: "10.0.0.1", success: false },
+                // ... more data
+            ]
+
+
+            function displayData(data, elementId) {
+                const container = document.getElementById(elementId);
+                container.classList.remove("loading");
+                container.innerHTML = "";
+
+                if (data.length === 0) {
+                    container.innerHTML = "No data available.";
+                    return;
+                }
+
+                const table = document.createElement("table");
+                const headerRow = table.insertRow();
+
+                for (const key in data[0]) {
+                    const headerCell = headerRow.insertCell();
+                    headerCell.textContent = key;
+                }
+
+                data.forEach(item => {
+                    const row = table.insertRow();
+                    for (const key in item) {
+                        const cell = row.insertCell();
+                        cell.textContent = item[key];
+                    }
+                });
+
+                container.appendChild(table);
+            }
+
+            displayData(activityLogData, "activity-log");
+            displayData(accessLogsData, "access-logs");
+            displayData(accessAttemptsData, "access-attempts");
+        }
+
+    </script>
+
+</body>
+</html>

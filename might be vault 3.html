@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HI TECH VAULT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--light-gray);
+            color: #343a40;
+            margin: 0;
+            display: flex; /* Use flexbox for layout */
+            min-height: 100vh;
+        }
+
+        h1 {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #sidebar {
+            width: 200px; /* Adjust sidebar width as needed */
+            background-color: #333;
+            color: white;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        #sidebar a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            transition: background-color 0.3s;
+            text-align: left;
+        }
+
+        #sidebar a:hover {
+            background-color: #555;
+        }
+
+        #main-content {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #modules {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            flex-grow: 1; /* Allow modules to expand */
+        }
+
+        .module {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .module:hover {
+            transform: scale(1.02);
+        }
+
+        .module h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #e9ecef;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            #modules {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        #login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #login-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--box-shadow);
+        }
+
+        #login-form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #login-form input[type="text"],
+        #login-form input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        #login-form button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+
+        #content {
+            display: none;
+            display: flex; /* Make content a flex container */
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <div id="login-modal">
+        <div id="login-form">
+            <h2>Admin Login</h2>
+            <div id="error-message"></div>
+            <form id="loginForm">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+        
+    </div>
+
+        <div id="main-content">
+            <h1>HI TECH VAULT MONITORING SYSTEM</h1>
+            <video id="cameraFeed" width="100%" controls autoplay muted style="display: none;"></video>
+            <div id="modules">
+                <div class="module" id="access_logs_container" style="display: none;">
+                    <h2>Access Logs</h2>
+                    <div id="access_logs" class="loading">Loading...</div>
+                </div>
+
+                <div class="module" id="alerts_container" style="display: none;">
+                    <h2>Alerts & Notifications</h2>
+                    <div id="alerts" class="loading">Loading...</div>
+                </div>
+
+                <div class="module" id="sensors_container" style="display: none;">
+                    <h2>Sensor Data</h2>
+                    <div id="sensors" class="loading">Loading...</div>
+                </div>
+
+                <div class="module" id="battery_container" style="display: none;">
+                    <h2>Battery Status</h2>
+                    <div id="Battery" class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="content" style="display: none;">
+            <div id="sidebar">
+                <a href="#" data-module="access_logs">Access Logs</a>
+                <a href="#" data-module="alerts">Alerts & Notifications</a>
+                <a href="#" data-module="sensors">Sensor Data</a>
+                <a href="#" data-module="battery">Battery Status</a>
+            </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let isLoggedIn = false; // Track login status
+
+        // Store user credentials
+const users = {
+    'toheeb': 'oguns',
+    'ajiboye': 'ajiboye',
+    'david': 'chinedu'
+};
+
+        socket.on('connect', () => {
+            console.log('Connected');
+        });
+
+        socket.on('data_update', (data) => {
+            console.log('Data update:', data);
+            if (isLoggedIn) { // Only update if logged in
+                updateModules(data);
+            }
+        });
+
+
+        // Login Logic
+        const loginModal = document.getElementById('login-modal');
+        const content = document.getElementById('content');
+        const loginForm = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('error-message');
+
+        loginForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (users[username] && users[username] === password) { // Replace with real authentication
+
+                loginModal.style.display = 'none';
+                content.style.display = 'block';
+                isLoggedIn = true; // Set login status to true
+                updateModules({}); // Request initial data after login
+            } else {
+                errorMessage.textContent = 'Invalid username or password.';
+            }
+
+            document.getElementById('cameraFeed').style.display = 'block';
+document.getElementById('cameraFeed').src = 'YOUR_CAMERA_STREAM_URL'; // Replace with your camera stream URL
+        });
+
+
+        // Menu and Module Handling
+        const menuLinks = document.querySelectorAll('#menu a');
+        const moduleContainers = {
+            "access_logs": document.getElementById('access_logs_container'),
+            "alerts": document.getElementById('alerts_container'),
+            "sensors": document.getElementById('sensor_container'),
+            "battery": document.getElementById('battery_container'),
+        };
+
+        menuLinks.forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const moduleId = event.target.dataset.module;
+
+                // Hide all modules
+                for (const container in moduleContainers) {
+                    moduleContainers[container].style.display = 'none';
+                }
+
+                // Show the selected module
+                moduleContainers[moduleId].style.display = 'block';
+
+                // If data hasn't been loaded, request it:
+                if (document.getElementById(moduleId).innerHTML.includes("Loading...")) {
+                  socket.emit('request_data', moduleId); // Request data for this specific module
+                }
+
+            });
+        });
+
+        function updateModules(data) {
+            for (const moduleId in data) {
+                const moduleData = data[moduleId];
+                displayData(moduleData, moduleId);
+            }
+        }
+
+        function displayData(data, elementId) {
+            const container = document.getElementById(elementId);
+            container.classList.remove("loading");
+            container.innerHTML = "";
+
+            if (data && data.length === 0) {
+                container.innerHTML = "No data available.";
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = "No data available.";
+                return;
+            }
+
+            const table = document.createElement("table");
+            const headerRow = table.insertRow();
+
+            if (data && data.length > 0) {
+                for (const key in data[0]) {
+                    const headerCell = headerRow.insertCell();
+                    headerCell.textContent = key;
+                }
+            } else {
+                const headerCell = headerRow.insertCell();
+                headerCell.textContent = "No Data";
+            }
+
+            if (data) {
+                data.forEach(item => {
+                    const row = table.insertRow();
+                    for (const key in item) {
+                        const cell = row.insertCell();
+                        cell.textContent = item[key];
+                    }
+                });
+            }
+
+            container.appendChild(table);
+        }
+
+    </script>
+    
+</body>
+</html>
